@@ -46,30 +46,36 @@ kompira ユーザからパスワード接続できるように、pg_hba.conf (RH
 
 以下のコマンドを実行して Kompira Enterprise 開始します。
 
+```
 $ export LOCAL_UID=$UID LOCAL_GID=$(id -g)
-
 $ docker compose pull
 $ docker compose up -d
+```
 
 ### システムの停止
 
 Kompira Enterprise を停止するには以下のコマンドを実行します。
 
+```
 $ docker compose stop
+```
 
 ### システムの再開
 
 停止した Kompira Enterprise を再開するには以下のコマンドを実行します。
 (代わりに docker compose up -d を使うことも可能です)
 
+```
 $ docker compose start
+```
 
 ### システムの削除
 
 以下のコマンドを実行すると、システムが停止し、すべてのコンテナとデータボリュームが削除されます。
 (PostgreSQL データベースのデータは削除されません)
 
-
+```
 $ docker compose down -v
+```
 
 -v オプションを指定しない場合、コンテナのみ削除され、データボリュームは残されます。

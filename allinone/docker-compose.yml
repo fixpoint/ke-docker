@@ -7,6 +7,10 @@ services:
     volumes:
       - ../configs/fluentd.conf:/fluentd/etc/fluent.conf:ro
       - ./log:/var/log/fluentd
+    environment:
+      TZ: ${TZ:-Asia/Tokyo}
+      LOCAL_UID: ${LOCAL_UID:?LOCAL_UID must be set, try "export LOCAL_UID=$$(id -u $${USER})"}
+      LOCAL_GID: ${LOCAL_GID:?LOCAL_GID must be set, try "export LOCAL_GID=$$(id -g $${USER})"}
     user: "${LOCAL_UID}:${LOCAL_GID}"
     ports:
       - "24224:24224"
@@ -20,6 +24,7 @@ services:
     environment:
       POSTGRES_PASSWORD: kompira
       POSTGRES_USER: kompira
+      TZ: ${TZ:-Asia/Tokyo}
     logging:
       driver: fluentd
       options:
@@ -30,12 +35,13 @@ services:
     restart: always
   kompira:
     container_name: kompira-app
-    image: kompira.azurecr.io/kompira-enterprise:latest
+    image: ${IMAGE_NAME:-kompira.azurecr.io/kompira-enterprise}:${IMAGE_TAG:-latest}
     environment:
       - DATABASE_URL=pgsql://kompira:kompira@postgres:5432/kompira
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - CACHE_URL=redis://redis:6379
-      - TZ=Asia/Tokyo
+      - LANGUAGE_CODE=${LANGUAGE_CODE:-ja}
+      - TZ=${TZ:-Asia/Tokyo}
     volumes:
       - kompira_var:/var/opt/kompira
       - ../configs/kompira_audit.yaml:/opt/kompira/kompira_audit.yaml:ro
@@ -53,12 +59,13 @@ services:
     restart: always
   kengine:
     container_name: kompira-engine
-    image: kompira.azurecr.io/kompira-enterprise:latest
+    image: ${IMAGE_NAME:-kompira.azurecr.io/kompira-enterprise}:${IMAGE_TAG:-latest}
     environment:
       - DATABASE_URL=pgsql://kompira:kompira@postgres:5432/kompira
       - AMQP_URL=amqp://guest:guest@rabbitmq:5672
       - CACHE_URL=redis://redis:6379
-      - TZ=Asia/Tokyo
+      - LANGUAGE_CODE=${LANGUAGE_CODE:-ja}
+      - TZ=${TZ:-Asia/Tokyo}
     volumes:
       - kompira_var:/var/opt/kompira
       - ../configs/kompira_audit.yaml:/opt/kompira/kompira_audit.yaml:ro
@@ -78,7 +85,9 @@ services:
     restart: always
   jobmngrd:
     container_name: kompira-jobmngr
-    image: kompira.azurecr.io/kompira-enterprise:latest
+    image: ${IMAGE_NAME:-kompira.azurecr.io/kompira-enterprise}:${IMAGE_TAG:-latest}
+    environment:
+      - TZ=${TZ:-Asia/Tokyo}
     volumes:
       - kompira_var:/var/opt/kompira
       - ../configs/kompira.conf:/opt/kompira/kompira.conf:ro
@@ -98,6 +107,8 @@ services:
   redis:
     container_name: kompira-cache
     image: redis:7.2-alpine
+    environment:
+      - TZ=${TZ:-Asia/Tokyo}
     volumes:
       - kompira_redis:/data
     logging:
@@ -111,6 +122,8 @@ services:
   nginx:
     container_name: kompira-web
     image: nginx:1.25-alpine
+    environment:
+      - TZ=${TZ:-Asia/Tokyo}
     volumes:
       - kompira_var:/var/opt/kompira
       - ../configs/nginx-default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -133,6 +146,7 @@ services:
       - kompira_mq:/var/lib/rabbitmq     # volume名を明示的に指定 (指定しないとハッシュ化された文字列のボリューム名が使われてゴミが増える)
     environment:
       RABBITMQ_DATA_DIR: /var/lib/rabbitmq    # デフォルト値なので指定不要だが、ボリュームのマウントポイントと一致させるために明示的に指定しておく
+      TZ: ${TZ:-Asia/Tokyo}
     logging:
       driver: fluentd
       options:
