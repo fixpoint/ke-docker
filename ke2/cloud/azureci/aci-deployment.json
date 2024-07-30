@@ -1,0 +1,241 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+      {
+        "type": "Microsoft.ContainerInstance/containerGroups",
+        "apiVersion": "2019-12-01",
+        "name": "azureci",
+        "location": "Japan East",
+        "properties": {
+          "containers": [
+            {
+              "name": "kompira",
+              "properties": {
+                "image": "[variables('keimage')]",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                },
+                "environmentVariables": [
+                  { "name": "DATABASE_URL", "value": "[parameters('databaseUrl')]" },
+                  { "name": "AMQP_URL", "value": "amqp://guest:guest@localhost:5672" },
+                  { "name": "CACHE_URL", "value": "redis://localhost:6379" },
+                  { "name": "TZ", "value": "[parameters('timezone')]" }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "kompira-var",
+                    "mountPath": "/var/opt/kompira"
+                  }
+                ],
+                "command": ["docker-entrypoint.sh", "uwsgi"]
+              }
+            },
+            {
+              "name": "kengine",
+              "properties": {
+                "image": "[variables('keimage')]",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                },
+                "environmentVariables": [
+                  { "name": "DATABASE_URL", "value": "[parameters('databaseUrl')]" },
+                  { "name": "AMQP_URL", "value": "amqp://guest:guest@localhost:5672" },
+                  { "name": "CACHE_URL", "value": "redis://localhost:6379" },
+                  { "name": "TZ", "value": "[parameters('timezone')]" }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "kompira-var",
+                    "mountPath": "/var/opt/kompira"
+                  }
+                ],
+                "command": ["docker-entrypoint.sh", "kompirad"]
+              }
+            },
+            {
+              "name": "jobmngrd",
+              "properties": {
+                "image": "[variables('keimage')]",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                },
+                "environmentVariables": [
+                  { "name": "AMQP_URL", "value": "amqp://guest:guest@localhost:5672" },
+                  { "name": "TZ", "value": "[parameters('timezone')]" }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "kompira-var",
+                    "mountPath": "/var/opt/kompira"
+                  }
+                ],
+                "command": ["docker-entrypoint.sh", "jobmngrd"]
+              }
+            },
+            {
+              "name": "redis",
+              "properties": {
+                "image": "registry.hub.docker.com/library/redis:7.2-alpine",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                }
+              }
+            },
+            {
+              "name": "rabbitmq",
+              "properties": {
+                "image": "registry.hub.docker.com/library/rabbitmq:3.12-alpine",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                },
+                "ports":[
+                  {
+                    "port": 5671
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "rabbitmq-conf",
+                    "mountPath": "/etc/rabbitmq/conf.d"
+                  },
+                  {
+                    "name": "ssl-cert",
+                    "mountPath": "/etc/rabbitmq/ssl"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "nginx",
+              "properties": {
+                "image": "registry.hub.docker.com/library/nginx:1.25-alpine",
+                "resources": {
+                  "requests": {
+                    "cpu": 0.5,
+                    "memoryInGB": 1
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "kompira-var",
+                    "mountPath": "/var/opt/kompira"
+                  },
+                  {
+                    "name": "kompira-nginx-conf",
+                    "mountPath": "/etc/nginx/conf.d"
+                  },
+                  {
+                    "name": "ssl-cert",
+                    "mountPath": "/etc/nginx/ssl"
+                  }
+                ],
+                "ports": [
+                  {
+                    "port": 80
+                  },
+                  {
+                    "port": 443
+                  }
+                ]
+              }
+            }
+          ],
+          "osType": "Linux",
+          "volumes": [
+            {
+              "name": "kompira-var",
+              "azureFile": {
+                "shareName": "kompira-var",
+                "storageAccountName": "[parameters('storageAccountName')]",
+                "storageAccountKey": "[parameters('storageAccountKey')]"
+              }
+            },
+            {
+              "name": "kompira-nginx-conf",
+              "azureFile": {
+                "shareName": "kompira-nginx-conf",
+                "storageAccountName": "[parameters('storageAccountName')]",
+                "storageAccountKey": "[parameters('storageAccountKey')]"
+              }
+            },
+            {
+              "name": "ssl-cert",
+              "azureFile": {
+                "shareName": "ssl-cert",
+                "storageAccountName": "[parameters('storageAccountName')]",
+                "storageAccountKey": "[parameters('storageAccountKey')]"
+              }
+            },
+            {
+              "name": "rabbitmq-conf",
+              "azureFile": {
+                "shareName": "rabbitmq-conf",
+                "storageAccountName": "[parameters('storageAccountName')]",
+                "storageAccountKey": "[parameters('storageAccountKey')]"
+              }
+            }
+          ],
+          "ipAddress": {
+            "type": "Public",
+            "dnsNameLabel": "[parameters('dnsNameLabel')]",
+            "ports": [
+              {
+                "protocol": "TCP",
+                "port": 80
+              },
+              {
+                "protocol": "TCP",
+                "port": 443
+              },
+              {
+                "port": 5671
+              }
+            ]
+          },
+          "restartPolicy": "Always"
+        },
+        "tags": {
+          "ke-azureaci": "keapp"
+        }
+      }
+    ],
+    "variables": {
+      "keimage": "[concat('kompira.azurecr.io/kompira-enterprise:', parameters('imageTag'))]"
+    },
+    "parameters": {
+      "databaseUrl": {
+        "type": "string"
+      },
+      "imageTag":{
+        "type": "string"
+      },
+      "timezone":{
+        "type": "string"
+      },
+      "dnsNameLabel":{
+        "type":"string"
+      },
+      "storageAccountName": {
+        "type": "string"
+      },
+      "storageAccountKey": {
+        "type": "string"
+      }
+    }
+  }
