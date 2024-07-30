@@ -1,8 +1,0 @@
-# クラウド AzureCI 構成
-name: ke2
-include:
-  - ../../services/redis.yml
-  - ../../services/rabbitmq.yml
-  - ../../services/jobmngrd.yml
-  - ../../services/kompira.yml
-  - ../../services/nginx.yml
