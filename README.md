@@ -41,11 +41,25 @@ $ docker compose up -d
 ※ なお、上記手順の create-cert.sh では自己署名 SSL 証明書を生成しています。その SSL 証明書をコンテナ起動時に HTTPS および AMQPS に適用していますので、ブラウザでアクセスする際にセキュリティの警告が表示されます。
 
 ## 4. 準備と設定
-### 4.1. Docker エンジンの準備
+### 4.1. Docker の準備
 
-Docker エンジンのインストール手順と起動方法については以下を参考にしてください。
+Docker engine および docker compose plugin については以下のバージョン要件があります。
+
+- Docker engine: version 24.0 以上
+- Docker compose plugin: version 2.24.6 以上
+
+Docker のインストール手順と起動方法については以下を参考にしてください。
 
 https://docs.docker.com/engine/install/
+
+たとえば RHEL 環境では以下のような手順になります。
+
+```
+$ sudo yum install -y yum-utils
+$ sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+$ sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+$ sudo systemctl enable --now docker
+```
 
 ### 4.2. 環境変数の設定
 
