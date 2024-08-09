@@ -5,6 +5,8 @@ services:
     environment:
       - TZ=${TZ:-Asia/Tokyo}
       - NGINX_ENVSUBST_FILTER=^KOMPIRA
+      - KOMPIRA_HOST=${KOMPIRA_HOST:-kompira}
+      - KOMPIRA_PORT=${KOMPIRA_PORT:-8000}
     configs:
       # MEMO: /etc/nginx/templates/*.template は起動時に環境変数が展開されて /etc/nginx/conf.d/* に書き出される
       - source: nginx-config
